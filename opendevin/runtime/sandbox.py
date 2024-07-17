@@ -1,19 +1,19 @@
+import copy
 import json
 import os
 from abc import ABC, abstractmethod
 
-from opendevin.core.config import config
+from opendevin.core.config import SandboxConfig
 from opendevin.core.schema import CancellableStream
-from opendevin.runtime.docker.process import Process
 from opendevin.runtime.plugins.mixin import PluginMixin
 
 
 class Sandbox(ABC, PluginMixin):
-    background_commands: dict[int, Process] = {}
     _env: dict[str, str] = {}
     is_initial_session: bool = True
 
-    def __init__(self, **kwargs):
+    def __init__(self, config: SandboxConfig):
+        self.config = copy.deepcopy(config)
         for key in os.environ:
             if key.startswith('SANDBOX_ENV_'):
                 sandbox_key = key.removeprefix('SANDBOX_ENV_')
@@ -31,18 +31,6 @@ class Sandbox(ABC, PluginMixin):
     def execute(
         self, cmd: str, stream: bool = False, timeout: int | None = None
     ) -> tuple[int, str | CancellableStream]:
-        pass
-
-    @abstractmethod
-    def execute_in_background(self, cmd: str) -> Process:
-        pass
-
-    @abstractmethod
-    def kill_background(self, id: int) -> Process:
-        pass
-
-    @abstractmethod
-    def read_logs(self, id: int) -> str:
         pass
 
     @abstractmethod

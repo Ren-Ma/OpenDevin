@@ -24,14 +24,17 @@ vi.mock("#/services/settings", async (importOriginal) => ({
   ...(await importOriginal<typeof import("#/services/settings")>()),
   getSettings: vi.fn().mockReturnValue({
     LLM_MODEL: "gpt-4o",
-    AGENT: "MonologueAgent",
+    AGENT: "CodeActAgent",
     LANGUAGE: "en",
+    LLM_API_KEY: "sk-...",
+    CONFIRMATION_MODE: true,
   }),
   getDefaultSettings: vi.fn().mockReturnValue({
     LLM_MODEL: "gpt-4o",
     AGENT: "CodeActAgent",
     LANGUAGE: "en",
     LLM_API_KEY: "",
+    CONFIRMATION_MODE: false,
   }),
   settingsAreUpToDate: vi.fn().mockReturnValue(true),
   saveSettings: vi.fn(),
@@ -103,9 +106,10 @@ describe("SettingsModal", () => {
   describe("onHandleSave", () => {
     const initialSettings: Settings = {
       LLM_MODEL: "gpt-4o",
-      AGENT: "MonologueAgent",
+      AGENT: "CodeActAgent",
       LANGUAGE: "en",
       LLM_API_KEY: "sk-...",
+      CONFIRMATION_MODE: true,
     };
 
     it("should save the settings", async () => {
@@ -139,7 +143,6 @@ describe("SettingsModal", () => {
       expect(saveSettings).toHaveBeenCalledWith({
         ...initialSettings,
         LLM_MODEL: "model3",
-        LLM_API_KEY: "", // reset after model change
       });
     });
 
@@ -196,7 +199,7 @@ describe("SettingsModal", () => {
         await userEvent.click(saveButton);
       });
 
-      expect(toastSpy).toHaveBeenCalledTimes(2);
+      expect(toastSpy).toHaveBeenCalledTimes(3);
     });
 
     it("should change the language", async () => {

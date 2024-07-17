@@ -1,14 +1,15 @@
+// frontend/src/components/chat/ChatInterface.tsx
 import React, { useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { IoMdChatbubbles } from "react-icons/io";
 import { RiArrowRightDoubleLine } from "react-icons/ri";
 import { useTranslation } from "react-i18next";
-import { twMerge } from "tailwind-merge";
 import { VscArrowDown } from "react-icons/vsc";
 import { FaRegThumbsDown, FaRegThumbsUp } from "react-icons/fa";
 import { useDisclosure } from "@nextui-org/react";
 import ChatInput from "./ChatInput";
 import Chat from "./Chat";
+import TypingIndicator from "./TypingIndicator";
 import { RootState } from "#/store";
 import AgentState from "#/types/AgentState";
 import { sendChatMessage } from "#/services/chatService";
@@ -72,7 +73,6 @@ function ChatInterface() {
   } = useDisclosure();
 
   const shareFeedback = async (polarity: "positive" | "negative") => {
-    setFeedbackShared(messages.length);
     setFeedback((prev) => ({
       ...prev,
       feedback: polarity,
@@ -123,33 +123,33 @@ function ChatInterface() {
           className="overflow-y-auto p-3"
           onScroll={(e) => onChatBodyScroll(e.currentTarget)}
         >
-          <Chat messages={messages} />
+          <Chat messages={messages} curAgentState={curAgentState} />
         </div>
-        {/* Fade between messages and input */}
-        <div
-          className={twMerge(
-            "absolute bottom-0 left-0 right-0",
-            curAgentState === AgentState.AWAITING_USER_INPUT ? "h-10" : "h-4",
-            "bg-gradient-to-b from-transparent to-neutral-800",
-          )}
-        />
       </div>
 
       <div className="relative">
         <div className="absolute bottom-2 left-0 right-0 flex items-center justify-center">
-          {!hitBottom &&
-            ScrollButton({
-              onClick: scrollDomToBottom,
-              icon: <VscArrowDown className="inline mr-2 w-3 h-3" />,
-              label: t(I18nKey.CHAT_INTERFACE$TO_BOTTOM),
-            })}
-          {curAgentState === AgentState.AWAITING_USER_INPUT &&
-            hitBottom &&
-            ScrollButton({
-              onClick: handleSendContinueMsg,
-              icon: <RiArrowRightDoubleLine className="inline mr-2 w-3 h-3" />,
-              label: t(I18nKey.CHAT_INTERFACE$INPUT_CONTINUE_MESSAGE),
-            })}
+          {!hitBottom && (
+            <ScrollButton
+              onClick={scrollDomToBottom}
+              icon={<VscArrowDown className="inline mr-2 w-3 h-3" />}
+              label={t(I18nKey.CHAT_INTERFACE$TO_BOTTOM)}
+            />
+          )}
+          {hitBottom && (
+            <>
+              {curAgentState === AgentState.AWAITING_USER_INPUT && (
+                <ScrollButton
+                  onClick={handleSendContinueMsg}
+                  icon={
+                    <RiArrowRightDoubleLine className="inline mr-2 w-3 h-3" />
+                  }
+                  label={t(I18nKey.CHAT_INTERFACE$INPUT_CONTINUE_MESSAGE)}
+                />
+              )}
+              {curAgentState === AgentState.RUNNING && <TypingIndicator />}
+            </>
+          )}
         </div>
 
         {feedbackShared !== messages.length && messages.length > 3 && (
@@ -169,7 +169,10 @@ function ChatInterface() {
       </div>
 
       <ChatInput
-        disabled={curAgentState === AgentState.LOADING}
+        disabled={
+          curAgentState === AgentState.LOADING ||
+          curAgentState === AgentState.AWAITING_USER_CONFIRMATION
+        }
         onSendMessage={handleSendMessage}
       />
       <FeedbackModal
@@ -178,6 +181,7 @@ function ChatInterface() {
         handlePermissionsChange={handlePermissionsChange}
         isOpen={feedbackModalIsOpen}
         onOpenChange={onFeedbackModalOpenChange}
+        onSendFeedback={() => setFeedbackShared(messages.length)}
       />
     </div>
   );
